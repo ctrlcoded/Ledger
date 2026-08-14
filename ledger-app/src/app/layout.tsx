@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Instrument_Sans, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -13,6 +13,13 @@ const robotoMono = Roboto_Mono({
   variable: "--font-roboto-mono",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "Ledger — Every rupee, accounted for",

@@ -9,13 +9,13 @@ interface DashboardEmptyStateProps {
 export default function DashboardEmptyState({ onAddTransaction }: DashboardEmptyStateProps) {
   return (
     <>
-      <div className="bg-paper border border-rule rounded-xl p-8 mb-8">
+      <div className="bg-paper border border-rule rounded-xl p-5 mb-6 sm:p-8 sm:mb-8">
         <p className="text-[10px] font-medium uppercase tracking-widest text-muted mb-2">CURRENT BALANCE</p>
-        <Amount value={0} showSign={false} className="text-[60px] font-medium tracking-tight text-rule mb-4 leading-none" />
+        <Amount value={0} showSign={false} className="text-4xl font-medium tracking-tight text-rule mb-3 leading-none sm:text-[60px] sm:mb-4" />
         <p className="text-sm text-muted">No transactions yet</p>
       </div>
 
-      <div className="bg-paper border border-rule rounded-xl p-16 flex flex-col items-center justify-center min-h-[400px] mb-8">
+      <div className="bg-paper border border-rule rounded-xl p-8 flex flex-col items-center justify-center min-h-[280px] mb-6 sm:p-16 sm:min-h-[400px] sm:mb-8">
         {/* Document Icon */}
         <div className="mb-6 text-rule">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -38,9 +38,9 @@ export default function DashboardEmptyState({ onAddTransaction }: DashboardEmpty
         </button>
       </div>
 
-      <div className="flex gap-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:gap-8">
         {/* Cash Flow */}
-        <div className="w-[300px] flex-shrink-0 bg-paper border border-rule rounded-xl p-6 h-[200px] flex flex-col justify-between">
+        <div className="w-full flex-shrink-0 bg-paper border border-rule rounded-xl p-4 h-[180px] flex flex-col justify-between sm:w-[300px] sm:p-6 sm:h-[200px]">
           <p className="text-[10px] font-medium uppercase tracking-widest text-muted">CASH FLOW</p>
           <div className="flex justify-between items-end gap-2 h-16">
             <div className="w-full bg-canvas rounded h-[10%]" />
@@ -51,8 +51,8 @@ export default function DashboardEmptyState({ onAddTransaction }: DashboardEmpty
         </div>
 
         {/* Active Budgets */}
-        <div className="flex-1 bg-paper border border-rule rounded-xl p-6">
-          <div className="flex justify-between items-center mb-8">
+        <div className="flex-1 bg-paper border border-rule rounded-xl p-4 sm:p-6">
+          <div className="flex justify-between items-center mb-6 sm:mb-8">
             <p className="text-[10px] font-medium uppercase tracking-widest text-muted">ACTIVE BUDGETS</p>
             <button className="text-xs font-medium text-ink">View all</button>
           </div>
