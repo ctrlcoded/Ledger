@@ -1,0 +1,1 @@
+const postgres = require('postgres'); const fs = require('fs'); require('dotenv').config({ path: '.env.local' }); async function run() { const sql = postgres(process.env.DIRECT_URL); const file = fs.readFileSync('setup_triggers_rls.sql', 'utf8'); await sql.unsafe(file); console.log('SQL Applied'); process.exit(0); } run();

@@ -32,7 +32,7 @@ export default function DashboardEmptyState({ onAddTransaction }: DashboardEmpty
         
         <button 
           onClick={onAddTransaction}
-          className="px-6 py-2.5 bg-ink text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+          className="px-6 py-2.5 bg-ink text-canvas text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
         >
           Add transaction
         </button>

@@ -235,7 +235,7 @@ export default function AddTransactionPanel({ isOpen, onClose, onSaved }: AddTra
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full py-3 bg-ink text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-60"
+            className="w-full py-3 bg-ink text-canvas text-sm font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-60"
           >
             {saving ? "Saving…" : "Save transaction"}
           </button>

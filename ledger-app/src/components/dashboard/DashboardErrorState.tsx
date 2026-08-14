@@ -10,7 +10,7 @@ export default function DashboardErrorState() {
           <p className="text-[10px] font-medium uppercase tracking-widest text-muted mb-1">FINANCIAL OVERVIEW</p>
           <h1 className="font-sans text-4xl font-semibold text-ink tracking-tight">Dashboard</h1>
         </div>
-        <button className="px-5 py-2.5 bg-ink text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+        <button className="px-5 py-2.5 bg-ink text-canvas text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
           Export CSV
         </button>
       </div>

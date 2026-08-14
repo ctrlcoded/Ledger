@@ -1,177 +1,130 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import Navbar from "@/components/ui/Navbar";
 import LineChart from "@/components/ui/LineChart";
+import { getReports } from "@/app/data";
+import { inr } from "@/lib/format";
 
-const chartData = [
-  { label: "Feb", income: 28000, expenses: 14000 },
-  { label: "Mar", income: 64000, expenses: 32000 },
-  { label: "Apr", income: 42000, expenses: 10000 },
-  { label: "May", income: 98000, expenses: 40000 },
-  { label: "Jun", income: 104250, expenses: 42800 },
-  { label: "Jul", income: 78000, expenses: 25000 },
-];
+type Reports = Extract<Awaited<ReturnType<typeof getReports>>, { ok: true }>;
 
 export default function AnalyticsPage() {
-  const [period, setPeriod] = useState<"6 months" | "12 months" | "All">("12 months");
+  const [data, setData] = useState<Reports | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getReports().then((res) => {
+      if (res.ok) setData(res);
+      setLoading(false);
+    });
+  }, []);
+
+  const scrollToCategories = () =>
+    document.getElementById("categories")?.scrollIntoView({ behavior: "smooth", block: "center" });
 
   return (
     <div className="min-h-screen bg-canvas">
       <Navbar />
 
-      <main className="max-w-content mx-auto px-8 py-8">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-6">
-          <div>
-            <h1 className="font-sans text-2xl font-semibold text-ink mb-1">
-              Analytics
-            </h1>
-            <p className="text-sm text-muted">Income and spending over time</p>
-          </div>
-
-          {/* Segmented Control */}
-          <div className="inline-flex bg-paper border border-rule rounded-lg p-1">
-            {(["6 months", "12 months", "All"] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
-                  period === p
-                    ? "bg-canvas border border-rule text-ink shadow-sm"
-                    : "text-muted hover:text-ink transparent border border-transparent"
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
+      <main className="mx-auto max-w-content px-6 py-8 md:px-8">
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-ink">Analytics</h1>
+          <p className="text-sm text-muted">Income and spending over time</p>
         </div>
 
-        {/* Chart Section */}
-        <div className="bg-paper border border-rule rounded-xl p-6 pt-8 mb-6">
-          <LineChart data={chartData} height={350} />
-        </div>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-paper border border-rule rounded-xl p-6">
-            <p className="text-xs font-medium uppercase tracking-widest text-muted mb-2">
-              HIGHEST MONTH
-            </p>
-            <p className="font-mono text-3xl font-medium tracking-tight text-ink mb-1">
-              ₹1,04,250
-            </p>
-            <p className="text-xs text-muted">June 2026</p>
+        {loading ? (
+          <div className="h-96 animate-pulse rounded-2xl bg-rule" />
+        ) : !data || !data.hasData ? (
+          <div className="grid place-items-center rounded-2xl border border-rule bg-paper py-24 text-center shadow-card">
+            <div className="max-w-sm px-6">
+              <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-xl bg-accent-soft text-accent">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 19V5M4 19h16M8 15l3-3 3 2 5-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </div>
+              <h2 className="text-lg font-semibold text-ink">No analytics yet</h2>
+              <p className="mt-2 text-sm text-muted">Add a few transactions and your income, spending, and trends will appear here.</p>
+              <Link href="/dashboard" className="mt-5 inline-flex rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-accent-contrast hover:bg-accent-hover">
+                Add a transaction
+              </Link>
+            </div>
           </div>
-          
-          <div className="bg-paper border border-rule rounded-xl p-6">
-            <p className="text-xs font-medium uppercase tracking-widest text-muted mb-2">
-              MONTHLY AVERAGE
-            </p>
-            <p className="font-mono text-3xl font-medium tracking-tight text-ink mb-1">
-              ₹11,800
-            </p>
-            <p className="text-xs text-muted">across 12 months</p>
-          </div>
-
-          <div className="bg-paper border border-rule rounded-xl p-6">
-            <p className="text-xs font-medium uppercase tracking-widest text-muted mb-2">
-              SAVED THIS YEAR
-            </p>
-            <p className="font-mono text-3xl font-medium tracking-tight text-ink mb-1">
-              ₹82,600
-            </p>
-            <p className="text-xs font-medium text-credit">
-              ▲ 7.4% vs last year
-            </p>
-          </div>
-        </div>
-
-        {/* Bottom Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Top Expense Categories */}
-          <div className="md:col-span-2 bg-paper border border-rule rounded-xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xs font-medium uppercase tracking-widest text-muted">
-                TOP EXPENSE CATEGORIES
-              </h3>
-              <button className="text-xs font-medium text-ink hover:underline">
-                View All
-              </button>
+        ) : (
+          <>
+            {/* Chart */}
+            <div className="mb-6 rounded-2xl border border-rule bg-paper p-6 pt-8 shadow-card">
+              <LineChart data={data.chart} height={350} />
             </div>
 
-            <div className="space-y-0">
-              {/* Category 1 */}
-              <div className="flex items-center justify-between py-4 border-b border-rule">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-canvas border border-rule rounded-lg flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink">
-                      <circle cx="9" cy="21" r="1" />
-                      <circle cx="20" cy="21" r="1" />
-                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                    </svg>
+            {/* Summary cards */}
+            <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+              <SummaryCard label="Highest month" value={inr(data.highestMonthValue)} sub={data.highestMonthLabel} />
+              <SummaryCard label="Avg monthly spend" value={inr(data.monthlyAvgExpense)} sub="active months" />
+              <SummaryCard label="Saved this year" value={inr(data.totalSaved)} sub={`${data.savingsRate}% savings rate`} accent />
+            </div>
+
+            {/* Categories + insight */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              <div id="categories" className="scroll-mt-24 rounded-2xl border border-rule bg-paper p-6 shadow-card md:col-span-2">
+                <h3 className="mb-6 text-xs font-medium uppercase tracking-widest text-muted">Top expense categories</h3>
+                {data.topCategories.length > 0 ? (
+                  <div className="divide-y divide-rule">
+                    {data.topCategories.map((c) => (
+                      <div key={c.name} className="flex items-center justify-between py-4">
+                        <div>
+                          <p className="text-sm font-semibold text-ink">{c.name}</p>
+                          <p className="text-xs text-muted">{c.count} transaction{c.count === 1 ? "" : "s"}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-mono text-sm font-semibold text-ink">{inr(c.total)}</p>
+                          <p className="mt-0.5 text-xs font-medium text-debit">{c.pct}% of spend</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-ink">Grocery & Retail</p>
-                    <p className="text-xs text-muted">14 Transactions</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-mono text-sm font-semibold text-ink">₹24,500.00</p>
-                  <p className="text-xs font-medium text-debit mt-0.5">12% of total</p>
-                </div>
+                ) : (
+                  <p className="py-6 text-sm text-muted">No expenses recorded yet.</p>
+                )}
               </div>
 
-              {/* Category 2 */}
-              <div className="flex items-center justify-between py-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-canvas border border-rule rounded-lg flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink">
-                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                      <polyline points="9 22 9 12 15 12 15 22" />
-                    </svg>
+              {/* Financial insight */}
+              <div className="flex flex-col justify-between rounded-2xl border border-[color:var(--accent)]/25 bg-accent-soft p-6">
+                <div>
+                  <div className="mb-4 flex items-center gap-2">
+                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-accent-contrast">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 16l4-4 3 2 8-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M14 6h5v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </span>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-accent">Financial insight</p>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-ink">Rent & Utilities</p>
-                    <p className="text-xs text-muted">4 Transactions</p>
-                  </div>
+                  <p className="text-sm font-medium leading-relaxed text-ink">
+                    You&apos;ve saved <span className="font-mono font-semibold tabular-nums">{inr(data.totalSaved)}</span> over the last year — a{" "}
+                    <span className="font-semibold text-credit">{data.savingsRate}% savings rate</span>. Trim your top categories to push it higher.
+                  </p>
                 </div>
-                <div className="text-right">
-                  <p className="font-mono text-sm font-semibold text-ink">₹45,000.00</p>
-                  <p className="text-xs font-medium text-debit mt-0.5">22% of total</p>
-                </div>
+                <button onClick={scrollToCategories} className="mt-6 w-full rounded-lg bg-accent py-3 text-xs font-semibold uppercase tracking-widest text-accent-contrast shadow-card transition-all hover:bg-accent-hover active:scale-[0.99]">
+                  Review budget
+                </button>
               </div>
             </div>
-          </div>
+          </>
+        )}
 
-          {/* Financial Insight */}
-          <div className="bg-ink rounded-xl p-6 text-white flex flex-col justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-widest text-white/50 mb-4">
-                FINANCIAL INSIGHT
-              </p>
-              <p className="text-sm font-medium leading-relaxed">
-                You&apos;re saving 14% more this quarter compared to Q1 2026. Keep this pace to reach your goal.
-              </p>
-            </div>
-            <button className="w-full mt-6 py-3 bg-white text-ink text-xs font-semibold rounded-lg hover:bg-paper transition-colors duration-150 uppercase tracking-widest">
-              REVIEW BUDGET
-            </button>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <footer className="mt-16 pb-8 border-t border-rule pt-8 flex items-center justify-between">
-          <p className="text-xs font-medium text-muted">
-            © 2026 Ledger Financial Systems. No shadows, pure data.
-          </p>
+        <footer className="mt-16 flex items-center justify-between border-t border-rule pb-8 pt-8">
+          <p className="text-xs font-medium text-muted">© 2026 Ledger</p>
           <div className="flex items-center gap-6">
-            <a href="#" className="text-xs font-medium text-muted hover:text-ink transition-colors">Privacy Policy</a>
-            <a href="/api/v1/export" className="text-xs font-medium text-muted hover:text-ink transition-colors">Export Data (CSV)</a>
+            <a href="/api/v1/export" className="text-xs font-medium text-muted transition-colors hover:text-ink">Export Data (CSV)</a>
           </div>
         </footer>
       </main>
+    </div>
+  );
+}
+
+function SummaryCard({ label, value, sub, accent }: { label: string; value: string; sub: string; accent?: boolean }) {
+  return (
+    <div className="rounded-2xl border border-rule bg-paper p-6 shadow-card">
+      <p className="mb-2 text-xs font-medium uppercase tracking-widest text-muted">{label}</p>
+      <p className="mb-1 font-mono text-3xl font-medium tracking-tight text-ink tabular-nums">{value}</p>
+      <p className={`text-xs font-medium ${accent ? "text-credit" : "text-muted"}`}>{sub}</p>
     </div>
   );
 }

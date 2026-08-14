@@ -1,196 +1,134 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import Navbar from "@/components/ui/Navbar";
 import Amount from "@/components/ui/Amount";
+import TransactionIcon from "@/components/ui/TransactionIcon";
 import AddTransactionPanel from "@/components/ui/AddTransactionPanel";
 import DashboardEmptyState from "@/components/dashboard/DashboardEmptyState";
-import DashboardErrorState from "@/components/dashboard/DashboardErrorState";
+import { getOverview } from "@/app/data";
+import { inr } from "@/lib/format";
 
-const recentTransactions = [
-  { date: "24 Oct 2023", description: "Dividend Payout - HDFC Bank", amount: 12400 },
-  { date: "23 Oct 2023", description: "Monthly Rent - Apartment 4B", amount: 35000 },
-  { date: "22 Oct 2023", description: "Consulting Fee - Project Aurora", amount: 72600 },
-  { date: "21 Oct 2023", description: "Zomato - Weekend Dinner", amount: 2450.5 },
-  { date: "20 Oct 2023", description: "Internet Subscription - ACT Fibernet", amount: 1299 },
-  { date: "19 Oct 2023", description: "Amazon India - Office Supplies", amount: 3600.5 },
-];
-
-const cashflowBars = [
-  { income: 30, expense: 65 },
-  { income: 50, expense: 70 },
-  { income: 40, expense: 45 },
-  { income: 55, expense: 80 },
-  { income: 35, expense: 50 },
-  { income: 60, expense: 45 },
-];
+type Overview = Extract<Awaited<ReturnType<typeof getOverview>>, { ok: true }>;
 
 export default function DashboardPage() {
-  return (
-    <Suspense fallback={<div />}>
-      <DashboardContent />
-    </Suspense>
-  );
-}
-
-function DashboardContent() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const searchParams = useSearchParams();
-  const stateParam = searchParams.get("state");
+  const [data, setData] = useState<Overview | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const res = await getOverview();
+    if (res.ok) setData(res);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const cashflowMax = data
+    ? Math.max(1, ...data.cashflow.flatMap((b) => [b.income, b.expense]))
+    : 1;
 
   return (
     <div className="min-h-screen bg-canvas">
       <Navbar
         rightContent={
-          <button 
+          <button
             onClick={() => setIsPanelOpen(true)}
-            className="px-5 py-2.5 bg-ink text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity duration-150"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-contrast shadow-card transition-all duration-150 hover:bg-accent-hover hover:shadow-card-hover active:scale-[0.98]"
           >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+              <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
             Log transaction
           </button>
         }
       />
 
-      <main className="max-w-content mx-auto px-8 py-8">
-        {stateParam === "error" ? (
-          <DashboardErrorState />
-        ) : stateParam === "empty" ? (
+      <main className="mx-auto max-w-content px-6 py-8 md:px-8">
+        {loading ? (
+          <LoadingState />
+        ) : !data || !data.hasData ? (
           <DashboardEmptyState onAddTransaction={() => setIsPanelOpen(true)} />
         ) : (
           <>
-            {/* Current Balance */}
-            <div className="text-right mb-8">
-              <p className="text-xs font-medium uppercase tracking-widest text-muted mb-2">
-                CURRENT BALANCE
-              </p>
-              <p className="font-mono text-6xl font-medium tracking-tight text-ink">
-                ₹1,24,500.00
-              </p>
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-2xl font-bold tracking-tight text-ink">Your ledger</h1>
+              <p className="mt-1 text-sm text-muted">Every rupee, accounted for.</p>
             </div>
 
-            <div className="mb-6">
-              <h2 className="font-sans text-xl font-semibold text-ink mb-4">
-                Recent transactions
-              </h2>
-              <div className="bg-paper border border-rule rounded-xl overflow-hidden">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-rule">
-                      <th className="text-left px-6 py-3 text-xs font-medium uppercase tracking-widest text-muted">
-                        DATE
-                      </th>
-                      <th className="text-left px-6 py-3 text-xs font-medium uppercase tracking-widest text-muted">
-                        DESCRIPTION
-                      </th>
-                      <th className="text-right px-6 py-3 text-xs font-medium uppercase tracking-widest text-muted">
-                        AMOUNT
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentTransactions.map((tx, i) => (
-                      <tr
-                        key={i}
-                        className="border-b border-rule last:border-b-0 hover:bg-canvas/50 transition-colors duration-100"
-                      >
-                        <td className="px-6 py-4 font-mono text-sm text-ink whitespace-nowrap">
-                          {tx.date}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-ink">{tx.description}</td>
-                        <td className="px-6 py-4 text-right">
-                          <Amount value={tx.amount} className="text-sm font-medium" />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* Row 1 — Balance + this month */}
+            <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <div className="relative col-span-1 overflow-hidden rounded-2xl border border-rule bg-paper p-7 shadow-card lg:col-span-2">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(130%_150%_at_100%_0%,var(--accent-soft),transparent_55%)]" />
+                <div className="relative">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                    Total balance
+                  </p>
+                  <p className="mt-3 font-mono text-5xl font-medium tracking-tight text-ink tabular-nums md:text-6xl">
+                    {inr(data.balance)}
+                  </p>
+                  {data.net !== 0 && (
+                    <p className="mt-4 text-sm text-muted">
+                      {data.net > 0 ? "You saved " : "You overspent "}
+                      <span className={`font-semibold ${data.net > 0 ? "text-credit" : "text-debit"}`}>
+                        {inr(Math.abs(data.net))}
+                      </span>{" "}
+                      this month.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="col-span-1 grid grid-rows-2 gap-6">
+                <MiniStat label="Income · this month" value={inr(data.income)} tone="credit" />
+                <MiniStat label="Expenses · this month" value={inr(data.expense)} tone="debit" />
               </div>
             </div>
 
-            {/* View Full Ledger */}
-            <div className="text-right mb-10">
-              <a
-                href="#"
-                className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink transition-colors duration-150"
-              >
-                View full ledger
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  className="ml-1"
-                >
-                  <path
-                    d="M6 12L10 8L6 4"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </a>
-            </div>
-
-            {/* Cashflow + Quick Insight */}
-            <div className="grid grid-cols-3 gap-6">
-              {/* Cashflow Architecture */}
-              <div className="col-span-2 bg-paper border border-rule rounded-xl p-6">
-                <p className="text-xs font-medium uppercase tracking-widest text-muted mb-6">
-                  CASHFLOW ARCHITECTURE
-                </p>
-                <div className="flex items-end gap-4 h-32">
-                  {cashflowBars.map((bar, i) => (
-                    <div key={i} className="flex items-end gap-1 flex-1">
-                      <div
-                        className="flex-1 bg-rule rounded-sm"
-                        style={{ height: `${bar.income}%` }}
-                      />
-                      <div
-                        className="flex-1 bg-ink rounded-sm"
-                        style={{ height: `${bar.expense}%` }}
-                      />
+            {/* Row 2 — Transactions + Cashflow */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <div className="col-span-1 overflow-hidden rounded-2xl border border-rule bg-paper shadow-card lg:col-span-2">
+                <div className="flex items-center justify-between px-6 py-5">
+                  <h2 className="text-base font-semibold text-ink">Recent transactions</h2>
+                </div>
+                <div className="divide-y divide-rule border-t border-rule">
+                  {data.transactions.map((tx) => (
+                    <div key={tx.id} className="flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-canvas">
+                      <TransactionIcon amount={tx.signedRupees} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-ink">{tx.description}</p>
+                        <p className="mt-0.5 font-mono text-xs text-muted">
+                          {tx.dateLabel}
+                          {tx.category ? ` · ${tx.category}` : ""}
+                        </p>
+                      </div>
+                      <Amount value={tx.signedRupees} showSign className="text-sm font-semibold" />
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Quick Insight */}
-              <div className="bg-ink rounded-xl p-6 flex flex-col justify-between">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-widest text-white/60 mb-4">
-                    QUICK INSIGHT
-                  </p>
-                  <p className="text-sm text-white leading-relaxed">
-                    Your spending on{" "}
-                    <span className="underline underline-offset-2">dining</span> is 12%
-                    lower than last month. Good discipline.
-                  </p>
+              <div className="col-span-1 rounded-2xl border border-rule bg-paper p-6 shadow-card">
+                <div className="mb-6 flex items-center justify-between">
+                  <h2 className="text-base font-semibold text-ink">Cashflow</h2>
+                  <div className="flex items-center gap-3 text-[11px] font-medium text-muted">
+                    <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-accent" /> In</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-rule-strong" /> Out</span>
+                  </div>
                 </div>
-                <div className="text-right mt-4">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="ml-auto"
-                  >
-                    <path
-                      d="M4 16L8 12L12 14L20 6"
-                      stroke="white"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M14 6H20V12"
-                      stroke="white"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                <div className="flex h-40 items-end gap-3">
+                  {data.cashflow.map((bar, i) => (
+                    <div key={i} className="flex flex-1 flex-col items-center gap-2">
+                      <div className="flex w-full flex-1 items-end justify-center gap-1">
+                        <div className="w-full max-w-[14px] rounded-t-md bg-accent transition-all" style={{ height: `${(bar.income / cashflowMax) * 100}%` }} />
+                        <div className="w-full max-w-[14px] rounded-t-md bg-rule-strong transition-all" style={{ height: `${(bar.expense / cashflowMax) * 100}%` }} />
+                      </div>
+                      <span className="text-[11px] font-medium text-muted">{bar.label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -198,10 +136,31 @@ function DashboardContent() {
         )}
       </main>
 
-      <AddTransactionPanel 
-        isOpen={isPanelOpen} 
-        onClose={() => setIsPanelOpen(false)} 
-      />
+      <AddTransactionPanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} onSaved={load} />
+    </div>
+  );
+}
+
+function MiniStat({ label, value, tone }: { label: string; value: string; tone: "credit" | "debit" }) {
+  return (
+    <div className="rounded-2xl border border-rule bg-paper p-6 shadow-card">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">{label}</p>
+      <p className={`mt-2 font-mono text-2xl font-medium tracking-tight tabular-nums ${tone === "credit" ? "text-credit" : "text-debit"}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="animate-pulse space-y-6">
+      <div className="h-8 w-48 rounded-lg bg-rule" />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="h-44 rounded-2xl bg-rule lg:col-span-2" />
+        <div className="h-44 rounded-2xl bg-rule" />
+      </div>
+      <div className="h-72 rounded-2xl bg-rule" />
     </div>
   );
 }
