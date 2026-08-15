@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
+  const [gender, setGender] = useState("male");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +68,7 @@ export default function LoginPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: { full_name: name.trim(), age: ageNum },
+        data: { full_name: name.trim(), age: ageNum, gender },
       },
     });
     setLoading(false);
@@ -190,34 +191,49 @@ export default function LoginPage() {
             {/* Form */}
             <form className="space-y-5" onSubmit={isSignup ? handleSignUp : handleSignIn}>
               {isSignup && (
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <label htmlFor="name" className={labelClass}>Name</label>
-                    <input
-                      id="name"
-                      type="text"
-                      autoComplete="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Aryan Raghav"
-                      className={inputClass}
-                    />
+                <>
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label htmlFor="name" className={labelClass}>Name</label>
+                      <input
+                        id="name"
+                        type="text"
+                        autoComplete="name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Aryan Raghav"
+                        className={inputClass}
+                      />
+                    </div>
+                    <div className="w-24">
+                      <label htmlFor="age" className={labelClass}>Age</label>
+                      <input
+                        id="age"
+                        type="number"
+                        min={13}
+                        max={120}
+                        autoComplete="off"
+                        value={age}
+                        onChange={(e) => setAge(e.target.value)}
+                        placeholder="24"
+                        className={inputClass}
+                      />
+                    </div>
                   </div>
-                  <div className="w-24">
-                    <label htmlFor="age" className={labelClass}>Age</label>
-                    <input
-                      id="age"
-                      type="number"
-                      min={13}
-                      max={120}
-                      autoComplete="off"
-                      value={age}
-                      onChange={(e) => setAge(e.target.value)}
-                      placeholder="24"
-                      className={inputClass}
-                    />
+                  <div>
+                    <label htmlFor="gender" className={labelClass}>Gender</label>
+                    <select
+                      id="gender"
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                      className={inputClass + " appearance-none cursor-pointer"}
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other / Prefer not to say</option>
+                    </select>
                   </div>
-                </div>
+                </>
               )}
 
               <div>

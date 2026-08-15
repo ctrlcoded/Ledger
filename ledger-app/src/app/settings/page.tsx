@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/ui/Navbar";
 import { signOut } from "@/app/auth/actions";
-import { currentUser } from "@/lib/user";
+import { useUser } from "@/components/providers/UserProvider";
 
 type ThemeMode = "light" | "dark" | "system";
 
@@ -20,9 +20,10 @@ function applyTheme(mode: ThemeMode) {
 }
 
 export default function SettingsPage() {
+  const user = useUser();
   // Account (editable, persisted locally for the demo)
-  const [name, setName] = useState(currentUser.name);
-  const [email, setEmail] = useState(currentUser.email);
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
   const [editing, setEditing] = useState(false);
 
   // Preferences

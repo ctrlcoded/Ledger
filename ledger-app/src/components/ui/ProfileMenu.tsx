@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { signOut } from "@/app/auth/actions";
-import { currentUser } from "@/lib/user";
+import { useUser } from "@/components/providers/UserProvider";
 
 /* Related icons — one per action, consistent 1.7 stroke */
 const icons = {
@@ -41,6 +42,7 @@ const icons = {
 };
 
 export default function ProfileMenu() {
+  const user = useUser();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -58,6 +60,8 @@ export default function ProfileMenu() {
     };
   }, [open]);
 
+  if (!user) return null;
+
   return (
     <div ref={ref} className="relative">
       <button
@@ -68,9 +72,16 @@ export default function ProfileMenu() {
           open ? "border-rule-strong bg-paper" : "border-rule bg-paper hover:bg-paper-elevated"
         }`}
       >
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-accent text-[11px] font-bold text-accent-contrast">
-          {currentUser.initials}
-        </span>
+        {user.avatarUrl ? (
+          <div className="relative h-7 w-7 overflow-hidden rounded-full border border-rule">
+            <Image src={user.avatarUrl} alt={user.name} fill className="object-cover" />
+          </div>
+        ) : (
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-accent text-[11px] font-bold text-accent-contrast">
+            {user.initials}
+          </span>
+        )}
+        
         <svg
           width="12"
           height="12"
@@ -86,12 +97,18 @@ export default function ProfileMenu() {
         <div className="absolute right-0 z-50 mt-2 w-64 origin-top-right rounded-2xl border border-rule bg-paper p-1.5 shadow-panel">
           {/* Identity header */}
           <div className="flex items-center gap-3 rounded-xl px-3 py-3">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-accent text-sm font-bold text-accent-contrast">
-              {currentUser.initials}
-            </span>
+            {user.avatarUrl ? (
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-rule">
+                <Image src={user.avatarUrl} alt={user.name} fill className="object-cover" />
+              </div>
+            ) : (
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent text-sm font-bold text-accent-contrast">
+                {user.initials}
+              </span>
+            )}
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-ink">{currentUser.name}</p>
-              <p className="truncate text-xs text-muted">{currentUser.email}</p>
+              <p className="truncate text-sm font-semibold text-ink">{user.name}</p>
+              <p className="truncate text-xs text-muted">{user.email}</p>
             </div>
           </div>
 

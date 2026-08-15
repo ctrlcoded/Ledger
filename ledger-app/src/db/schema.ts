@@ -27,6 +27,7 @@ export const profiles = pgTable('profiles', {
   id: uuid('id').primaryKey(), // references auth.users(id)
   displayName: text('display_name'),
   avatarUrl: text('avatar_url'),
+  gender: text('gender'),
   defaultCurrency: char('default_currency', { length: 3 }).notNull().default('INR'),
   timezone: text('timezone').notNull().default('Asia/Kolkata'),
   plan: planTierEnum('plan').notNull().default('free'),
