@@ -1,8 +1,15 @@
 "use server";
 
+import { unstable_cache } from "next/cache";
 import { getSession } from "@/lib/auth";
 import { forUser } from "@/db/repo";
 import type { TxnView } from "@/lib/types";
+
+// Per-user read cache. On Vercel this is the shared, persistent Data Cache;
+// entries are invalidated the instant a write fires revalidateTag(user:*:txn /
+// :rollup) in actions.ts, and expire after `revalidate` seconds as a backstop.
+const CACHE_TTL = 60;
+const userTags = (userId: string) => [`user:${userId}:txn`, `user:${userId}:rollup`];
 
 /* ---------- helpers ---------- */
 
@@ -29,11 +36,8 @@ function labelDate(iso: string) {
 
 /* ---------- dashboard / landing overview ---------- */
 
-export async function getOverview() {
-  const session = await getSession();
-  if (!session) return { ok: false as const, error: "UNAUTHENTICATED" as const };
-
-  const repo = forUser(session.userId);
+async function overviewFor(userId: string) {
+  const repo = forUser(userId);
   const cur = monthRange(0);
   const six = monthRange(-5);
 
@@ -104,13 +108,20 @@ export async function getOverview() {
   };
 }
 
-/* ---------- calendar ---------- */
-
-export async function getCalendarMonth(year: number, month0: number) {
+export async function getOverview() {
   const session = await getSession();
   if (!session) return { ok: false as const, error: "UNAUTHENTICATED" as const };
+  const { userId } = session;
+  return unstable_cache(() => overviewFor(userId), ["overview", userId], {
+    tags: userTags(userId),
+    revalidate: CACHE_TTL,
+  })();
+}
 
-  const repo = forUser(session.userId);
+/* ---------- calendar ---------- */
+
+async function calendarFor(userId: string, year: number, month0: number) {
+  const repo = forUser(userId);
   const from = ymd(new Date(year, month0, 1));
   const to = ymd(new Date(year, month0 + 1, 0));
 
@@ -145,13 +156,21 @@ export async function getCalendarMonth(year: number, month0: number) {
   return { ok: true as const, byDay, netByDay };
 }
 
-/* ---------- reports ---------- */
-
-export async function getReports() {
+export async function getCalendarMonth(year: number, month0: number) {
   const session = await getSession();
   if (!session) return { ok: false as const, error: "UNAUTHENTICATED" as const };
+  const { userId } = session;
+  return unstable_cache(
+    () => calendarFor(userId, year, month0),
+    ["calendar", userId, String(year), String(month0)],
+    { tags: userTags(userId), revalidate: CACHE_TTL }
+  )();
+}
 
-  const repo = forUser(session.userId);
+/* ---------- reports ---------- */
+
+async function reportsFor(userId: string) {
+  const repo = forUser(userId);
   const from = monthRange(-11).from;
   const to = monthRange(0).to;
 
@@ -218,4 +237,14 @@ export async function getReports() {
     savingsRate: totalIncome > 0 ? Math.round(((totalIncome - totalExpenses) / totalIncome) * 100) : 0,
     hasData: totalIncome + totalExpenses > 0,
   };
+}
+
+export async function getReports() {
+  const session = await getSession();
+  if (!session) return { ok: false as const, error: "UNAUTHENTICATED" as const };
+  const { userId } = session;
+  return unstable_cache(() => reportsFor(userId), ["reports", userId], {
+    tags: userTags(userId),
+    revalidate: CACHE_TTL,
+  })();
 }
