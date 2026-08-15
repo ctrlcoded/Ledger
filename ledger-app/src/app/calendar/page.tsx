@@ -232,11 +232,19 @@ function DayDetail({
       ) : (
         <div className="py-4">
           <p className="text-sm text-muted">No transactions for this day.</p>
-          <button onClick={onAddTransaction} className="mt-3 text-sm font-semibold text-accent hover:text-accent-hover">
-            Add one →
-          </button>
         </div>
       )}
+
+      {/* Always-visible add button */}
+      <button
+        onClick={onAddTransaction}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-rule py-3 text-sm font-semibold text-accent transition-all duration-150 hover:border-accent hover:bg-accent-soft active:scale-[0.98]"
+      >
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+          <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+        Add transaction
+      </button>
     </>
   );
 }
