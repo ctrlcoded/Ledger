@@ -109,7 +109,7 @@ export default function AnalyticsPage() {
         )}
 
         <footer className="mt-10 flex flex-col items-center gap-3 border-t border-rule pb-8 pt-6 sm:mt-16 sm:flex-row sm:justify-between sm:gap-0 sm:pt-8">
-          <p className="text-xs font-medium text-muted">© 2026 Ledger</p>
+          <p className="text-xs font-medium text-muted">© 2026 Lekha</p>
           <div className="flex items-center gap-6">
             <a href="/api/v1/export" className="text-xs font-medium text-muted transition-colors hover:text-ink">Export Data (CSV)</a>
           </div>

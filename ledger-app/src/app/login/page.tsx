@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -115,10 +116,8 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Brand */}
           <div className="mb-8 flex items-center justify-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink text-base font-bold text-canvas">
-              ₹
-            </span>
-            <span className="text-lg font-bold tracking-tight text-ink">Ledger</span>
+            <Image src="/logo.png" alt="Lekha" width={36} height={36} priority />
+            <span className="text-lg font-bold tracking-tight text-ink">Lekha</span>
           </div>
 
           {/* Heading */}
@@ -274,7 +273,7 @@ export default function LoginPage() {
 
             {/* Footer link mirrors the tabs */}
             <p className="mt-7 text-center text-sm text-muted">
-              {isSignup ? "Already have an account? " : "New to Ledger? "}
+              {isSignup ? "Already have an account? " : "New to Lekha? "}
               <button
                 type="button"
                 onClick={() => switchMode(isSignup ? "signin" : "signup")}

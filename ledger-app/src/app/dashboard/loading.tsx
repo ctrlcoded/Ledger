@@ -82,7 +82,7 @@ export default function DashboardLoading() {
 
         <footer className="mt-16 flex items-center justify-between text-[11px] text-muted">
           <span className="uppercase tracking-widest">Disciplined Data Architecture</span>
-          <span>© 2024 Ledger Financial Systems. All rights reserved.</span>
+          <span>© 2026 Lekha. All rights reserved.</span>
         </footer>
       </main>
     </div>

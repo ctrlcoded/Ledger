@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 import ProfileMenu from "./ProfileMenu";
@@ -62,10 +63,8 @@ export default function Navbar({ rightContent }: NavbarProps) {
               href="/"
               className="flex items-center gap-2 text-lg font-bold tracking-tight text-ink"
             >
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-ink text-[13px] font-bold text-canvas">
-                ₹
-              </span>
-              Ledger
+              <Image src="/logo.png" alt="Lekha" width={28} height={28} priority />
+              Lekha
             </Link>
 
             <div className="hidden items-center gap-1 md:flex">

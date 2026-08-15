@@ -22,9 +22,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Ledger — Every rupee, accounted for",
+  title: "Lekha — Every rupee, accounted for",
   description:
-    "Personal finance ledger to track every rupee of income and expense with precision.",
+    "Lekha is a personal finance ledger to track every rupee of income and expense with precision.",
 };
 
 export default function RootLayout({

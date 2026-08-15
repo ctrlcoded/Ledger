@@ -68,7 +68,7 @@ export default function SettingsPage() {
     setNotifications(next);
     localStorage.setItem("notifications", next ? "on" : "off");
     if (next && "Notification" in window && Notification.permission === "granted") {
-      new Notification("Ledger", { body: "Daily summaries are on. You'll get a 9:00 PM recap." });
+      new Notification("Lekha", { body: "Daily summaries are on. You'll get a 9:00 PM recap." });
     }
   };
 
