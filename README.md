@@ -44,16 +44,16 @@ Lekha follows a modern serverless architecture, heavily utilizing Next.js Server
 ```mermaid
 graph TD
     Client["Client (Browser/Mobile)"]
-    NextJS[Next.js App Router]
-    ServerActions[Server Actions]
-    SupabaseAuth[Supabase Auth]
-    PostgreSQL[(PostgreSQL via Supavisor)]
+    NextJS["Next.js App Router"]
+    ServerActions["Server Actions"]
+    SupabaseAuth["Supabase Auth"]
+    DB[("PostgreSQL via Supavisor")]
 
-    Client -->|RSC Navigation & Form Submissions| NextJS
+    Client -->|App Navigation and Forms| NextJS
     Client -->|Auth State| SupabaseAuth
-    NextJS -->|Reads/Writes (Drizzle)| PostgreSQL
+    NextJS -->|Reads and Writes| DB
     NextJS -->|Mutations| ServerActions
-    ServerActions -->|Secure Writes| PostgreSQL
+    ServerActions -->|Secure Writes| DB
 ```
 
 ### Database Schema (Entity Relationship)
