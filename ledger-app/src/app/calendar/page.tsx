@@ -89,12 +89,34 @@ export default function CalendarPage() {
         {/* Header with month navigation */}
         <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
-            <h1 className="text-xl font-semibold text-ink sm:text-2xl">
-              <span className="hidden sm:inline">{monthNames[month]}</span>
-              <span className="sm:hidden">{monthShort[month]}</span>
-              {" "}
-              <span className="font-normal text-muted">{year}</span>
-            </h1>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <select
+                value={month}
+                onChange={(e) => {
+                  setMonth(Number(e.target.value));
+                  setSelectedDay(1);
+                }}
+                className="appearance-none bg-transparent text-xl font-semibold text-ink sm:text-2xl focus:outline-none cursor-pointer hover:text-accent transition-colors"
+                aria-label="Select month"
+              >
+                {monthNames.map((m, i) => (
+                  <option key={m} value={i}>{m}</option>
+                ))}
+              </select>
+              <select
+                value={year}
+                onChange={(e) => {
+                  setYear(Number(e.target.value));
+                  setSelectedDay(1);
+                }}
+                className="appearance-none bg-transparent text-xl font-normal text-muted sm:text-2xl focus:outline-none cursor-pointer hover:text-ink transition-colors"
+                aria-label="Select year"
+              >
+                {Array.from({ length: 11 }, (_, i) => now.getFullYear() - 5 + i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
             <div className="ml-2 flex items-center gap-1 sm:ml-4">
               <button onClick={prevMonth} className="grid h-8 w-8 place-items-center rounded-lg border border-rule text-muted transition-colors hover:border-ink hover:text-ink">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 3L5 7L9 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
