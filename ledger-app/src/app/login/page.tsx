@@ -260,7 +260,7 @@ export default function LoginPage() {
                   autoComplete={isSignup ? "off" : "email"}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
+                  placeholder="you@email.com"
                   className={inputClass}
                 />
               </div>
@@ -303,17 +303,7 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Footer link mirrors the tabs */}
-            <p className="mt-7 text-center text-sm text-muted">
-              {isSignup ? "Already have an account? " : "New to Lekha? "}
-              <button
-                type="button"
-                onClick={() => switchMode(isSignup ? "signin" : "signup")}
-                className="font-semibold text-accent transition-colors hover:text-accent-hover"
-              >
-                {isSignup ? "Sign in" : "Create an account"}
-              </button>
-            </p>
+
           </div>
 
           <p className="mt-6 text-center text-xs text-muted">
