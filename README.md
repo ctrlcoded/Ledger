@@ -1,123 +1,192 @@
-# Ledger: High-Performance Personal Finance Engine
+# Lekha
 
-A calm, precise, and meticulously architected personal finance ledger for India. Built as an installable Progressive Web App (PWA), Ledger provides a fast, resilient, and offline-capable experience for tracking every rupee of income and expenditure.
+> Every rupee, accounted for. A lightning-fast, premium personal finance tracker built for the modern web.
 
-Engineered for scale and exactness, Ledger is built on a serverless, cost-efficient stack designed to remain incredibly performant from the first transaction to the ten-thousandth. 
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat&logo=next.js)](https://nextjs.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Auth_%26_DB-3ECF8E?style=flat&logo=supabase)](https://supabase.com/)
+[![Drizzle ORM](https://img.shields.io/badge/Drizzle-ORM-C5F74F?style=flat)](https://orm.drizzle.team/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed-Vercel-black?style=flat&logo=vercel)](https://vercel.com)
 
----
-
-## 🏛 Architecture & Engineering Philosophy
-
-Ledger is designed with a set of strict architectural invariants to ensure data integrity, optimal performance, and developer ergonomics.
-
-### 1. Exact Arithmetic (`BIGINT`)
-**Money is stored strictly as `BIGINT` minor units (paise).**
-There are no floating-point approximations or rounding drifts. Currency values are treated as exact integers end-to-end, parsed into `number` or `BigInt` at the network boundary, and safely formatted only at the presentation layer.
-
-### 2. O(1) Aggregations via PostgreSQL Triggers
-Financial applications often degrade in performance as transaction history grows due to naive `SUM()` queries over entire ledgers.
-Ledger solves this using **asynchronous materialized rollups**. A series of optimized PostgreSQL triggers maintain `daily_rollups` and `user_balances` tables on every write. The frontend dashboard achieves O(1) read complexity, querying pre-aggregated states instead of raw transaction logs.
-
-### 3. Idempotency & Synchronization
-Distributed systems and offline-first PWAs require robust replayability.
-- **Sync Upserts**: Background-sync queues in the PWA use an idempotent upsert model keyed on a composite `(user_id, client_id)`. Network retries never duplicate transactions.
-- **Webhook Handlers**: External webhook events (e.g., Razorpay) are deduped using deterministic hashing.
-- **Cron Materialization**: Recurring transaction rules are evaluated idempotently, meaning the cron endpoint can be safely re-triggered without generating duplicate entries.
-
-### 4. Edge-Proxied Authentication
-Authentication leverages Supabase Auth (Email/Password + Google OAuth), but the session is strictly guarded by Next.js Edge Middleware (`proxy.ts`). Every application route is protected before hitting the Node.js runtime, ensuring unauthenticated requests never consume serverless compute resources.
+Lekha is a high-performance, mobile-responsive web application designed to help users track their income and expenses effortlessly. Built with a focus on speed, aesthetics, and reliability, it leverages edge computing and modern React paradigms to deliver an app-like experience in the browser.
 
 ---
 
-## 🛠 Technology Stack
+## 🚀 Key Features
 
-| Domain | Technology & Justification |
-|---|---|
-| **Framework** | **Next.js 16** (App Router, Turbopack, Server Actions) for React Server Components (RSC) and seamless API boundaries. |
-| **Language** | **TypeScript** (Strict Mode) for end-to-end type safety. |
-| **UI & Styling** | **React 19** + **Tailwind CSS**. Custom design tokens, dark/light mode (`ThemeToggle.tsx`), and highly modular components. |
-| **Database** | **PostgreSQL** (via Supabase) utilizing advanced features like Triggers, Functions, and Row-Level Security (RLS). |
-| **ORM** | **Drizzle ORM**. Lightweight, type-safe, and avoids the heavy abstraction penalties of traditional ORMs. |
-| **Connection Pooling**| **Supavisor** running in transaction mode to handle serverless connection limits. |
-| **Rate Limiting** | **Upstash Redis** for sliding-window rate limiting on critical mutations (e.g., CSV exports, login attempts). |
-| **Deployment** | **Vercel** (Edge + Serverless Functions). |
+- **Dashboard Overview:** Instant insights into your current balance, monthly income, expenses, and net cash flow.
+- **Transaction Ledger:** Log transactions with categories, amounts, dates, and notes. Offline-ready optimistic UI updates.
+- **Calendar View:** A detailed, interactive calendar to review daily spending habits and add transactions to any specific date.
+- **Authentication:** Secure email/password and Google OAuth sign-in, powered by Supabase Auth.
+- **Dynamic 3D Avatars:** Automatic assignment of premium 3D avatars based on gender selection during onboarding.
+- **Responsive Design:** A beautifully crafted, glassmorphism-inspired UI that looks perfect on both desktop and mobile devices.
+- **Theme Support:** Native Light, Dark, and System theme synchronization.
 
 ---
 
-## 🛡 Security Posture
+## 🛠 Tech Stack
 
-- **Row-Level Security (RLS)**: Every table enforces RLS. Policies use the `(select auth.uid())` pattern, ensuring the predicate is evaluated once per statement rather than per row, optimizing Postgres query planning.
-- **Boundary Validation**: All inputs traversing the client-server boundary (via Server Actions or Route Handlers) are strictly validated using **Zod**.
-- **Timing-Safe Webhooks**: External webhooks verify HMAC signatures using constant-time string comparisons to prevent timing attacks.
-- **Cron Authorization**: System endpoints are securely gated behind a highly entropic `CRON_SECRET` bearer token.
-- **Strict Headers**: `next.config.mjs` enforces standard security headers (HSTS, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`).
+- **Framework:** [Next.js](https://nextjs.org/) (App Router, Server Actions, React Server Components)
+- **Database:** [PostgreSQL](https://www.postgresql.org/) (Hosted on Supabase)
+- **ORM:** [Drizzle ORM](https://orm.drizzle.team/) (Type-safe schema definition and querying)
+- **Authentication:** [Supabase Auth](https://supabase.com/docs/guides/auth)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) (Custom design system, CSS variables)
+- **Deployment:** [Vercel](https://vercel.com) (Edge Functions, Serverless)
 
 ---
 
-## 📂 Project Structure
+## 🏗 System Architecture
 
-```text
-Ledger/
-├── ledger-app/                  # Core Next.js Application
-│   ├── src/
-│   │   ├── app/                 # RSC Routes, Server Actions, API Handlers
-│   │   ├── components/ui/       # Granular UI Components (Navbar, ThemeToggle, ProfileMenu)
-│   │   ├── components/dashboard/# Complex Feature Modules
-│   │   ├── db/                  # Drizzle Schema, Repo patterns, Migrations
-│   │   └── lib/                 # Auth primitives, Rate limiting, Utility functions
-│   ├── setup_triggers_rls.sql   # Postgres DDL for Triggers, RLS, and Seeding
-│   ├── run-drizzle.js           # Drizzle execution scripts
-│   ├── run-sql.js               # SQL runner utility
-│   ├── drizzle.config.ts        # Drizzle ORM configuration
-│   └── tailwind.config.ts       # Tailwind design tokens and custom plugins
-└── README.md
+Lekha follows a modern serverless architecture, heavily utilizing Next.js Server Components to reduce client-side JavaScript, and Server Actions for secure, API-less mutations.
+
+### High-Level Flow
+
+```mermaid
+graph TD
+    Client["Client (Browser/Mobile)"]
+    NextJS[Next.js App Router]
+    ServerActions[Server Actions]
+    SupabaseAuth[Supabase Auth]
+    PostgreSQL[(PostgreSQL via Supavisor)]
+
+    Client -->|RSC Navigation & Form Submissions| NextJS
+    Client -->|Auth State| SupabaseAuth
+    NextJS -->|Reads/Writes (Drizzle)| PostgreSQL
+    NextJS -->|Mutations| ServerActions
+    ServerActions -->|Secure Writes| PostgreSQL
 ```
 
+### Database Schema (Entity Relationship)
+
+The database is heavily normalized and utilizes triggers to maintain referential integrity and calculate daily rollups synchronously for ultra-fast dashboard queries.
+
+```mermaid
+erDiagram
+    PROFILES ||--o{ TRANSACTIONS : creates
+    PROFILES ||--o{ CATEGORIES : owns
+    PROFILES ||--o{ ACCOUNTS : owns
+    PROFILES ||--o{ RECURRING_RULES : owns
+    PROFILES ||--o{ DAILY_ROLLUPS : aggregates
+    
+    PROFILES {
+        uuid id PK
+        text display_name
+        text avatar_url
+        text gender
+        timestamp created_at
+    }
+
+    TRANSACTIONS {
+        uuid id PK
+        uuid user_id FK
+        uuid category_id FK
+        enum direction "credit | debit"
+        bigint amount_minor
+        date occurred_on
+    }
+
+    CATEGORIES {
+        uuid id PK
+        uuid user_id FK
+        text name
+        text icon
+        enum direction
+    }
+
+    DAILY_ROLLUPS {
+        uuid user_id PK
+        date day PK
+        bigint credit_minor
+        bigint debit_minor
+        bigint net_minor
+        integer txn_count
+    }
+```
+
+### Key Architectural Decisions
+
+1. **Transaction Pooler:** We use Supabase's Supavisor connection pooler on port `6543` in Transaction Mode (`prepare: false`, `max: 1`) to ensure serverless edge functions don't exhaust database connections.
+2. **Database Triggers for Rollups:** To avoid expensive `SUM()` aggregations on the dashboard, we use PostgreSQL triggers (`fn_update_daily_rollups`) to eagerly materialize `daily_rollups` and `user_balances` tables on every transaction insert/update/delete.
+3. **Optimistic Updates:** Client-side mutations utilize React's `useTransition` and Next.js `revalidatePath` to provide instant UI feedback while the server processes the data in the background.
+
 ---
 
-## 🚀 Local Development Setup
+## 💻 Local Development Setup
+
+Follow these steps to run Lekha locally on your machine.
 
 ### Prerequisites
-- **Node.js 20+**
-- A [Supabase](https://supabase.com) project
-- *(Optional)* [Upstash Redis](https://upstash.com) for local rate limiting testing.
+- Node.js (v18 or higher)
+- A [Supabase](https://supabase.com) account
 
-### 1. Clone & Install
+### 1. Clone the repository
 ```bash
 git clone https://github.com/ctrlcoded/Ledger.git
 cd Ledger/ledger-app
+```
+
+### 2. Install dependencies
+```bash
 npm install
 ```
 
-### 2. Environment Configuration
-Copy the environment template:
-```bash
-cp .env.example .env.local
-```
-Populate the required Supabase variables:
-```env
-DATABASE_URL=              # Supavisor pooler, port 6543 (transaction mode)
-DIRECT_URL=                # Direct connection, port 5432 (migrations only)
-NEXT_PUBLIC_SUPABASE_URL=  # Your Supabase API URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY= # Your Supabase Anon Key
-```
-> **Note**: If Supabase variables are omitted, the app will gracefully degrade into **demo mode**. The auth guard becomes a no-op, allowing UI inspection, but data mutations will be disabled.
+### 3. Environment Variables
+Create a `.env.local` file in the `ledger-app` directory and populate it with your Supabase credentials:
 
-### 3. Database Initialization
-Push the schema using Drizzle, then apply the advanced Postgres triggers and RLS policies:
+```env
+# Pooler connection (Port 6543) - Used by the app at runtime
+DATABASE_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres"
+
+# Direct connection (Port 5432) - Used strictly for Drizzle migrations
+DIRECT_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
+
+# Supabase Auth
+NEXT_PUBLIC_SUPABASE_URL="https://[PROJECT_REF].supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="[YOUR_ANON_KEY]"
+```
+
+### 4. Database Setup & Migrations
+Push the Drizzle schema to your Supabase instance:
 ```bash
 npx drizzle-kit push
-node run-sql.js setup_triggers_rls.sql
 ```
-*(Alternatively, execute `setup_triggers_rls.sql` manually in the Supabase SQL Editor.)*
 
-### 4. Start Development Server
+Next, run the `setup_triggers_rls.sql` script directly in your Supabase SQL Editor. This script:
+1. Enables Row Level Security (RLS) policies.
+2. Creates the profile auto-generation triggers on signup.
+3. Sets up the ledger balance rollup triggers.
+
+### 5. Start the Dev Server
 ```bash
 npm run dev
 ```
-Navigate to `http://localhost:3000` to view the application.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 📄 License
-Released under the MIT License.
+## 🚀 Deployment
+
+Lekha is optimized for deployment on Vercel. 
+
+1. Push your code to GitHub.
+2. Import the project into Vercel.
+3. Add all the environment variables from your `.env.local` to the Vercel project settings.
+4. Click **Deploy**.
+
+*Note: Ensure your `DATABASE_URL` in production utilizes a transaction pooler (like Supavisor) to prevent connection timeouts during traffic spikes.*
+
+---
+
+## 📈 Scalability Roadmap
+
+For future high-scale deployment (100k+ concurrent users), the following architectural upgrades have been audited and planned:
+
+1. **PostgreSQL Partitioning:** Implement `pg_partman` to partition the `audit_log` and `transactions` tables by month to prevent index bloat.
+2. **Read-Replicas:** Offload heavy `getOverview` and `getCalendarMonth` queries to Supabase read-replicas.
+3. **Redis Caching:** Introduce Upstash Redis to cache static category and user profile data.
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License.
