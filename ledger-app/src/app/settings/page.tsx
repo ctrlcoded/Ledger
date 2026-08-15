@@ -202,13 +202,13 @@ export default function SettingsPage() {
                   role="switch"
                   aria-checked={notifications}
                   onClick={toggleNotifications}
-                  className={`relative h-7 w-12 flex-shrink-0 rounded-full transition-colors duration-200 ${
-                    notifications ? "bg-accent" : "bg-rule-strong"
+                  className={`relative inline-flex h-8 w-14 min-w-[56px] self-start flex-shrink-0 items-center rounded-full border transition-colors duration-200 ${
+                    notifications ? "bg-accent border-accent" : "bg-rule-strong border-rule-strong"
                   }`}
                 >
                   <span
-                    className={`absolute top-1 h-5 w-5 rounded-full bg-paper shadow-sm transition-transform duration-200 ${
-                      notifications ? "translate-x-[22px]" : "translate-x-1"
+                    className={`inline-block h-6 w-6 rounded-full bg-paper shadow transition-transform duration-200 ${
+                      notifications ? "translate-x-[26px]" : "translate-x-[2px]"
                     }`}
                   />
                 </button>
