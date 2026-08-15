@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/ui/Navbar";
 import Amount from "@/components/ui/Amount";
 import TransactionIcon from "@/components/ui/TransactionIcon";
@@ -18,6 +19,7 @@ const monthNames = [
 const dayLabels = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 
 function MiniCalendar({ dots }: { dots: Record<number, { credit?: boolean; debit?: boolean }> }) {
+  const router = useRouter();
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -52,7 +54,7 @@ function MiniCalendar({ dots }: { dots: Record<number, { credit?: boolean; debit
           return (
             <button
               key={day}
-              onClick={() => window.location.href = '/calendar'}
+              onClick={() => router.push('/calendar')}
               className="relative text-center cursor-pointer group"
             >
               <div className={`py-1 text-xs sm:py-1.5 sm:text-sm transition-colors duration-100 ${isToday ? "rounded-lg border border-rule bg-canvas font-semibold text-ink" : "rounded-lg text-ink group-hover:bg-accent-soft group-hover:text-accent"}`}>{day}</div>
