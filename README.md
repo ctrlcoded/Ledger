@@ -1,6 +1,8 @@
+<div align="center">
+
 # Lekha
 
-> Every rupee, accounted for. A lightning-fast, premium personal finance tracker built for the modern web.
+*Every rupee, accounted for. A lightning-fast, premium personal finance tracker built for the modern web.*<br><br>
 
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-Auth_%26_DB-3ECF8E?style=flat&logo=supabase)](https://supabase.com/)
@@ -8,7 +10,11 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed-Vercel-black?style=flat&logo=vercel)](https://vercel.com)
 
+<br>
+
 Lekha is a high-performance, mobile-responsive web application designed to help users track their income and expenses effortlessly. Built with a focus on speed, aesthetics, and reliability, it leverages edge computing and modern React paradigms to deliver an app-like experience in the browser.
+
+</div>
 
 ---
 
