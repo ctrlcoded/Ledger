@@ -34,6 +34,37 @@ export function forUser(userId: string) {
       return row?.balanceMinor ?? BigInt(0);
     },
 
+    /** Targeted date-range read — index seek on idx_txn_list, no JS filtering. */
+    async listByDateRange(from: string, to: string, limit = 1000) {
+      return db
+        .select()
+        .from(transactions)
+        .where(and(mine, live, sql`${transactions.occurredOn} between ${from} and ${to}`))
+        .orderBy(desc(transactions.occurredOn), desc(transactions.id))
+        .limit(limit);
+    },
+
+    /** Category spend aggregation pushed down to Postgres (GROUP BY, not JS). */
+    async categoryBreakdown(from: string, to: string, currency = 'INR') {
+      return db
+        .select({
+          categoryId: transactions.categoryId,
+          totalMinor: sql<string>`sum(${transactions.amountMinor})`,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(transactions)
+        .where(
+          and(
+            mine,
+            live,
+            eq(transactions.direction, 'debit'),
+            eq(transactions.currencyCode, currency),
+            sql`${transactions.occurredOn} between ${from} and ${to}`
+          )
+        )
+        .groupBy(transactions.categoryId);
+    },
+
     /** ≤31 rows. Powers the calendar and the dashboard band. */
     async monthRollup(from: string, to: string, currency = 'INR') {
       return db

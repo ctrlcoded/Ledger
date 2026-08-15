@@ -35,12 +35,15 @@ export async function getOverview() {
 
   const repo = forUser(session.userId);
   const cur = monthRange(0);
+  const six = monthRange(-5);
 
-  const [balanceMinor, rows, cats, monthRollups] = await Promise.all([
+  // Single 6-month rollup fetch; the current month is a subset of it, so we
+  // never re-query the hottest range twice (CRITICAL-3).
+  const [balanceMinor, rows, cats, wide] = await Promise.all([
     repo.balance(),
     repo.listTransactions(undefined, 12),
     repo.getCategories(),
-    repo.monthRollup(cur.from, cur.to),
+    repo.monthRollup(six.from, cur.to),
   ]);
 
   const catMap = new Map(cats.map((c: any) => [c.id, c.name as string]));
@@ -58,12 +61,12 @@ export async function getOverview() {
     };
   });
 
-  const income = monthRollups.reduce((s: number, r: any) => s + rupees(r.creditMinor), 0);
-  const expense = monthRollups.reduce((s: number, r: any) => s + rupees(r.debitMinor), 0);
+  // Current month income/expense derived from the 6-month set (no extra query).
+  const curRollups = (wide as any[]).filter((r) => r.day >= cur.from && r.day <= cur.to);
+  const income = curRollups.reduce((s: number, r: any) => s + rupees(r.creditMinor), 0);
+  const expense = curRollups.reduce((s: number, r: any) => s + rupees(r.debitMinor), 0);
 
   // last 6 months of cashflow, aggregated by month
-  const six = monthRange(-5);
-  const wide = await repo.monthRollup(six.from, monthRange(0).to);
   const byMonth = new Map<string, { income: number; expense: number }>();
   for (let i = 5; i >= 0; i--) {
     const d = new Date();
@@ -111,12 +114,13 @@ export async function getCalendarMonth(year: number, month0: number) {
   const from = ymd(new Date(year, month0, 1));
   const to = ymd(new Date(year, month0 + 1, 0));
 
-  const [rollups, cats] = await Promise.all([repo.monthRollup(from, to), repo.getCategories()]);
+  // Index-seek the month directly (CRITICAL-1) — no fetch-all-then-filter.
+  const [rollups, cats, rows] = await Promise.all([
+    repo.monthRollup(from, to),
+    repo.getCategories(),
+    repo.listByDateRange(from, to, 1000),
+  ]);
   const catMap = new Map(cats.map((c: any) => [c.id, c.name as string]));
-
-  // pull the month's transactions (bounded — a personal ledger month is small)
-  const rowsAll = await repo.listTransactions(undefined, 500);
-  const rows = (rowsAll as any[]).filter((r) => r.occurredOn >= from && r.occurredOn <= to);
 
   const byDay: Record<number, TxnView[]> = {};
   for (const r of rows) {
@@ -151,9 +155,10 @@ export async function getReports() {
   const from = monthRange(-11).from;
   const to = monthRange(0).to;
 
-  const [rollups, rows, cats] = await Promise.all([
+  // Aggregation pushed down to Postgres (CRITICAL-2) — no 1000-row JS scan.
+  const [rollups, breakdown, cats] = await Promise.all([
     repo.monthRollup(from, to),
-    repo.listTransactions(undefined, 1000),
+    repo.categoryBreakdown(from, to),
     repo.getCategories(),
   ]);
   const catMap = new Map(cats.map((c: any) => [c.id, c.name as string]));
@@ -182,23 +187,18 @@ export async function getReports() {
   const totalIncome = chart.reduce((s, m) => s + m.income, 0);
   const totalExpenses = chart.reduce((s, m) => s + m.expenses, 0);
 
-  // Top expense categories from real transactions
-  const catTotals = new Map<string, { total: number; count: number }>();
-  for (const r of rows as any[]) {
-    if (r.direction !== "debit") continue;
-    const name = r.categoryId ? catMap.get(r.categoryId) ?? "Uncategorised" : "Uncategorised";
-    const e = catTotals.get(name) ?? { total: 0, count: 0 };
-    e.total += rupees(r.amountMinor);
-    e.count += 1;
-    catTotals.set(name, e);
-  }
-  const topCategories = [...catTotals.entries()]
-    .map(([name, v]) => ({
-      name,
-      total: v.total,
-      count: v.count,
-      pct: totalExpenses > 0 ? Math.round((v.total / totalExpenses) * 100) : 0,
-    }))
+  // Top expense categories — already grouped by Postgres.
+  const topCategories = (breakdown as any[])
+    .map((b) => {
+      const name = b.categoryId ? catMap.get(b.categoryId) ?? "Uncategorised" : "Uncategorised";
+      const total = rupees(b.totalMinor);
+      return {
+        name,
+        total,
+        count: Number(b.count),
+        pct: totalExpenses > 0 ? Math.round((total / totalExpenses) * 100) : 0,
+      };
+    })
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);
 

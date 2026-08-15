@@ -36,35 +36,41 @@ export async function addTransaction(input: unknown) {
   }
 
   const values = { ...parsed.data, userId: session.userId };
+  const userAgent = (await headers()).get('user-agent') ?? null;
 
-  const [row] = await db
-    .insert(transactions)
-    .values(values)
-    .onConflictDoUpdate({
-      target: [transactions.userId, transactions.clientId],
-      // never overwrite the identity columns on conflict
-      set: {
-        direction:    values.direction,
-        amountMinor:  values.amountMinor,
-        currencyCode: values.currencyCode,
-        occurredOn:   values.occurredOn,
-        accountId:    values.accountId,
-        categoryId:   values.categoryId,
-        note:         values.note,
-        updatedAt:    new Date(),
-      },
-    })
-    .returning({ id: transactions.id });
+  // Atomic: the transaction write and its audit row commit together, so a
+  // failure can't leave a money mutation without an audit trail (MOD-4).
+  const row = await db.transaction(async (tx) => {
+    const [inserted] = await tx
+      .insert(transactions)
+      .values(values)
+      .onConflictDoUpdate({
+        target: [transactions.userId, transactions.clientId],
+        // never overwrite the identity columns on conflict
+        set: {
+          direction:    values.direction,
+          amountMinor:  values.amountMinor,
+          currencyCode: values.currencyCode,
+          occurredOn:   values.occurredOn,
+          accountId:    values.accountId,
+          categoryId:   values.categoryId,
+          note:         values.note,
+          updatedAt:    new Date(),
+        },
+      })
+      .returning({ id: transactions.id });
 
-  // audit every money mutation (Backend_archi §3.10)
-  const h = await headers();
-  await db.insert(auditLog).values({
-    userId:    session.userId,
-    action:    'create',
-    entity:    'transaction',
-    entityId:  row.id,
-    after:     { ...values, amountMinor: values.amountMinor.toString() },
-    userAgent: h.get('user-agent') ?? null,
+    // audit every money mutation (Backend_archi §3.10)
+    await tx.insert(auditLog).values({
+      userId:    session.userId,
+      action:    'create',
+      entity:    'transaction',
+      entityId:  inserted.id,
+      after:     { ...values, amountMinor: values.amountMinor.toString() },
+      userAgent,
+    });
+
+    return inserted;
   });
 
   revalidateTag(`user:${session.userId}:txn`, 'max');

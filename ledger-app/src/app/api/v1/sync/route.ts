@@ -3,7 +3,7 @@ import { getSession } from '@/lib/auth';
 import { rateLimit } from '@/lib/ratelimit';
 import { db } from '@/db/client';
 import { transactions, txnDirectionEnum } from '@/db/schema';
-import { sql, and, eq, gt } from 'drizzle-orm';
+import { sql, and, eq, asc } from 'drizzle-orm';
 
 const TransactionUpsert = z.object({
   clientId:     z.string().uuid(),
@@ -20,7 +20,11 @@ const TransactionUpsert = z.object({
 const SyncPush = z.object({
   transactions: z.array(TransactionUpsert).max(500),
   since: z.string().datetime().optional(),
+  // keyset cursor for paging the delta pull (preferred over `since`)
+  cursor: z.object({ updatedAt: z.string().datetime(), id: z.string().uuid() }).optional(),
 });
+
+const PULL_LIMIT = 1000;
 
 export async function POST(req: Request) {
   const session = await getSession();
@@ -59,18 +63,29 @@ export async function POST(req: Request) {
       });
   }
 
-  // pull — delta since the client's watermark
+  // pull — delta via a stable keyset over (updated_at, id). Uses idx_txn_sync
+  // and paginates deterministically (CRITICAL-7): first sync no longer relies
+  // on an unstable full-scan ordering.
   const changed = await db
     .select()
     .from(transactions)
     .where(
       and(
         eq(transactions.userId, session.userId),
-        body.since ? gt(transactions.updatedAt, new Date(body.since)) : sql`true`
+        body.cursor
+          ? sql`(${transactions.updatedAt}, ${transactions.id}) > (${new Date(body.cursor.updatedAt)}, ${body.cursor.id})`
+          : body.since
+            ? sql`${transactions.updatedAt} > ${new Date(body.since)}`
+            : sql`true`
       )
     )
-    .orderBy(transactions.updatedAt)
-    .limit(1000);
+    .orderBy(asc(transactions.updatedAt), asc(transactions.id))
+    .limit(PULL_LIMIT);
 
-  return Response.json({ changed, serverTime: new Date().toISOString() });
+  const nextCursor =
+    changed.length === PULL_LIMIT
+      ? { updatedAt: changed[changed.length - 1].updatedAt, id: changed[changed.length - 1].id }
+      : null;
+
+  return Response.json({ changed, nextCursor, serverTime: new Date().toISOString() });
 }
