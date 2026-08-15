@@ -104,7 +104,7 @@ export default function LoginPage() {
   const isSignup = mode === "signup";
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-canvas px-4 py-10">
+    <div className="relative min-h-screen overflow-x-hidden bg-canvas px-4 py-10">
       {/* Ambient warm glow */}
       <div className="pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,var(--accent-soft),transparent)]" />
 
@@ -220,18 +220,33 @@ export default function LoginPage() {
                       />
                     </div>
                   </div>
-                  <div>
-                    <label htmlFor="gender" className={labelClass}>Gender</label>
-                    <select
-                      id="gender"
-                      value={gender}
-                      onChange={(e) => setGender(e.target.value)}
-                      className={inputClass + " appearance-none cursor-pointer"}
-                    >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other / Prefer not to say</option>
-                    </select>
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label htmlFor="gender" className={labelClass}>Gender</label>
+                      <select
+                        id="gender"
+                        value={gender}
+                        onChange={(e) => setGender(e.target.value)}
+                        className={inputClass + " appearance-none cursor-pointer h-[46px]"}
+                      >
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other / Prefer not to say</option>
+                      </select>
+                    </div>
+                    {/* Avatar Preview */}
+                    <div className="flex flex-col items-center justify-center">
+                      <span className={labelClass + " text-[10px]"}>Preview</span>
+                      <div className="relative h-[46px] w-[46px] overflow-hidden rounded-full border-2 border-rule bg-canvas shadow-sm transition-transform duration-300 hover:scale-110">
+                        {gender === "male" && <Image src="/male_avatar.jpg" alt="Male Avatar" fill className="object-cover" />}
+                        {gender === "female" && <Image src="/female_avatar.jpg" alt="Female Avatar" fill className="object-cover" />}
+                        {gender === "other" && (
+                          <div className="flex h-full w-full items-center justify-center bg-accent text-accent-contrast text-lg font-bold">
+                            {name ? name.charAt(0).toUpperCase() : "U"}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </>
               )}
