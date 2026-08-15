@@ -50,15 +50,19 @@ function MiniCalendar({ dots }: { dots: Record<number, { credit?: boolean; debit
           const isToday = day === today;
           const d = dots[day];
           return (
-            <div key={day} className="relative text-center">
-              <div className={`py-1 text-xs sm:py-1.5 sm:text-sm ${isToday ? "rounded-lg border border-rule bg-canvas font-semibold text-ink" : "text-ink"}`}>{day}</div>
+            <button
+              key={day}
+              onClick={() => window.location.href = '/calendar'}
+              className="relative text-center cursor-pointer group"
+            >
+              <div className={`py-1 text-xs sm:py-1.5 sm:text-sm transition-colors duration-100 ${isToday ? "rounded-lg border border-rule bg-canvas font-semibold text-ink" : "rounded-lg text-ink group-hover:bg-accent-soft group-hover:text-accent"}`}>{day}</div>
               {d && (
                 <div className="-mt-0.5 flex justify-center gap-0.5">
                   {d.credit && <div className="h-1 w-1 rounded-full bg-credit sm:h-1.5 sm:w-1.5" />}
                   {d.debit && <div className="h-1 w-1 rounded-full bg-debit sm:h-1.5 sm:w-1.5" />}
                 </div>
               )}
-            </div>
+            </button>
           );
         })}
         {nextDays.map((day, i) => (

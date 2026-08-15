@@ -123,7 +123,7 @@ export default function ProfileMenu() {
           <form action={signOut}>
             <button
               type="submit"
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-debit transition-colors hover:bg-debit/10"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-debit transition-all duration-150 hover:bg-debit/10 active:scale-[0.97] active:bg-debit/15"
             >
               <span className="text-debit">{icons.signout}</span>
               Sign out

@@ -5,6 +5,12 @@ import { dirname } from 'node:path';
 const nextConfig = {
   // Pin the workspace root — silences the multiple-lockfiles inference warning.
   turbopack: { root: dirname(fileURLToPath(import.meta.url)) },
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: '*.supabase.co' },
+    ],
+  },
   async headers() {
     return [
       {

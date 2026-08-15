@@ -220,32 +220,33 @@ export default function LoginPage() {
                       />
                     </div>
                   </div>
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <label htmlFor="gender" className={labelClass}>Gender</label>
-                      <select
-                        id="gender"
-                        value={gender}
-                        onChange={(e) => setGender(e.target.value)}
-                        className={inputClass + " appearance-none cursor-pointer h-[46px]"}
-                      >
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other / Prefer not to say</option>
-                      </select>
-                    </div>
-                    {/* Avatar Preview */}
-                    <div className="flex flex-col items-center justify-center">
-                      <span className={labelClass + " text-[10px]"}>Preview</span>
-                      <div className="relative h-[46px] w-[46px] overflow-hidden rounded-full border-2 border-rule bg-canvas shadow-sm transition-transform duration-300 hover:scale-110">
-                        {gender === "male" && <Image src="/male_avatar.jpg" alt="Male Avatar" fill className="object-cover" />}
-                        {gender === "female" && <Image src="/female_avatar.jpg" alt="Female Avatar" fill className="object-cover" />}
-                        {gender === "other" && (
-                          <div className="flex h-full w-full items-center justify-center bg-accent text-accent-contrast text-lg font-bold">
-                            {name ? name.charAt(0).toUpperCase() : "U"}
-                          </div>
-                        )}
-                      </div>
+                  <div>
+                    <label htmlFor="gender" className={labelClass}>Gender</label>
+                    <div className="flex items-center gap-3">
+                      {/* Gender selector pills */}
+                      {(["male", "female", "other"] as const).map((g) => (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => setGender(g)}
+                          className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                            gender === g
+                              ? "border-accent bg-accent-soft text-accent shadow-sm"
+                              : "border-rule bg-paper-elevated text-muted hover:border-rule-strong hover:text-ink"
+                          }`}
+                        >
+                          {g === "male" && (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="10" cy="14" r="5" stroke="currentColor" strokeWidth="1.8"/><path d="M14.5 9.5L20 4M20 4h-5M20 4v5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          )}
+                          {g === "female" && (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="9" r="5" stroke="currentColor" strokeWidth="1.8"/><path d="M12 14v7M9 18h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                          )}
+                          {g === "other" && (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                          )}
+                          {g === "male" ? "Male" : g === "female" ? "Female" : "Other"}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </>
