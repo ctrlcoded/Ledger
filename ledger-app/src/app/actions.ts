@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { revalidateTag } from 'next/cache';
+import { revalidateTag, revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { and, eq } from 'drizzle-orm';
 import { getSession } from '@/lib/auth';
@@ -115,6 +115,65 @@ export async function softDeleteTransaction(id: string) {
 
   revalidateTag(`user:${session.userId}:txn`, 'max');
   revalidateTag(`user:${session.userId}:rollup`, 'max');
+
+  return { ok: true } as const;
+}
+
+const DeleteTransaction = z.string().uuid();
+
+export async function deleteTransaction(id: unknown) {
+  const session = await getSession();
+  if (!session) return { ok: false, error: 'UNAUTHENTICATED' } as const;
+
+  if (process.env.UPSTASH_REDIS_REST_URL) {
+    const { success } = await rateLimit.write.limit(session.userId);
+    if (!success) return { ok: false, error: 'RATE_LIMITED' } as const;
+  }
+
+  const parsed = DeleteTransaction.safeParse(id);
+  if (!parsed.success) return { ok: false, error: 'INVALID' } as const;
+  const txnId = parsed.data;
+
+  const userAgent = (await headers()).get('user-agent') ?? null;
+
+  // Hard delete, scoped to the owner (id AND user_id). The row DELETE fires the
+  // transactions_rollup trigger (setup_triggers_rls.sql → trg_transactions_rollup),
+  // which reverses the row's contribution to daily_rollups + user_balances. We must
+  // NOT bypass it with raw SQL — the trigger is the single source of rollup truth.
+  // Delete + audit commit together so a money mutation can't lose its audit trail.
+  const deleted = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .delete(transactions)
+      .where(and(eq(transactions.id, txnId), eq(transactions.userId, session.userId)))
+      .returning();
+
+    if (!row) return null;
+
+    await tx.insert(auditLog).values({
+      userId:   session.userId,
+      action:   'delete',
+      entity:   'transaction',
+      entityId: row.id,
+      before:   {
+        ...row,
+        amountMinor: row.amountMinor.toString(),
+        signedMinor: row.signedMinor?.toString() ?? null,
+      },
+      userAgent,
+    });
+
+    return row;
+  });
+
+  if (!deleted) return { ok: false, error: 'NOT_FOUND' } as const;
+
+  // Bust the per-user read cache (data.ts unstable_cache tags) so rollups/balance
+  // re-read; also nudge the page routes the user asked to see refreshed.
+  revalidateTag(`user:${session.userId}:txn`, 'max');
+  revalidateTag(`user:${session.userId}:rollup`, 'max');
+  for (const path of ['/', '/dashboard', '/calendar', '/reports']) {
+    revalidatePath(path);
+  }
 
   return { ok: true } as const;
 }

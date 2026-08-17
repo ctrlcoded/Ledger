@@ -27,22 +27,53 @@ begin
 end $$;
 
 -- 2b. Profiles Trigger
+-- Populates first_name / last_name from raw_user_meta_data with a fallback chain
+-- that covers both email signup (first_name/last_name passed in options.data) and
+-- Google OAuth (given_name/family_name/full_name/name), landing on the email
+-- local-part so first_name is never null.
 create or replace function fn_handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  meta      jsonb := coalesce(new.raw_user_meta_data, '{}'::jsonb);
+  v_first   text;
+  v_last    text;
+  v_display text;
 begin
-  insert into profiles (id, display_name, avatar_url, gender)
+  v_first := coalesce(
+    nullif(meta->>'first_name', ''),                          -- email signup
+    nullif(meta->>'given_name', ''),                          -- Google
+    nullif(split_part(coalesce(meta->>'full_name', ''), ' ', 1), ''),  -- Google full_name
+    nullif(split_part(coalesce(meta->>'name', ''), ' ', 1), ''),       -- Google name
+    split_part(new.email, '@', 1)                             -- email local-part
+  );
+
+  v_last := coalesce(
+    nullif(meta->>'last_name', ''),                           -- email signup
+    nullif(meta->>'family_name', '')                          -- Google
+  );
+
+  v_display := coalesce(
+    nullif(meta->>'full_name', ''),
+    nullif(meta->>'name', ''),
+    nullif(trim(concat_ws(' ', v_first, v_last)), ''),
+    split_part(new.email, '@', 1)
+  );
+
+  insert into profiles (id, display_name, first_name, last_name, avatar_url, gender)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    v_display,
+    v_first,
+    v_last,
     coalesce(
-      new.raw_user_meta_data->>'avatar_url',
-      case 
-        when new.raw_user_meta_data->>'gender' = 'male' then '/male_avatar.jpg'
-        when new.raw_user_meta_data->>'gender' = 'female' then '/female_avatar.jpg'
+      meta->>'avatar_url',
+      case
+        when meta->>'gender' = 'male' then '/male_avatar.jpg'
+        when meta->>'gender' = 'female' then '/female_avatar.jpg'
         else null
       end
     ),
-    new.raw_user_meta_data->>'gender'
+    meta->>'gender'
   );
   perform fn_seed_default_categories(new.id);
   return new;
@@ -109,6 +140,9 @@ begin
   return null;
 end $$;
 
+-- Fires symmetrically on INSERT / UPDATE / DELETE. On DELETE, trg_transactions_rollup
+-- reverses the OLD row's contribution (when it was live), so a hard delete keeps
+-- daily_rollups + user_balances correct. No separate delete-only trigger is needed.
 drop trigger if exists transactions_rollup on transactions;
 create trigger transactions_rollup
   after insert or update or delete on transactions

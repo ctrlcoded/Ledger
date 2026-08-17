@@ -6,8 +6,13 @@ import Navbar from "@/components/ui/Navbar";
 import Amount from "@/components/ui/Amount";
 import TransactionIcon from "@/components/ui/TransactionIcon";
 import AddTransactionPanel from "@/components/ui/AddTransactionPanel";
+import DeleteTxnButton from "@/components/ui/DeleteTxnButton";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import Toast from "@/components/ui/Toast";
 import DashboardEmptyState from "@/components/dashboard/DashboardEmptyState";
+import Greeting from "@/components/dashboard/Greeting";
 import { getOverview } from "@/app/data";
+import { useTransactionDelete } from "@/lib/useTransactionDelete";
 import { inr } from "@/lib/format";
 
 type Overview = Extract<Awaited<ReturnType<typeof getOverview>>, { ok: true }>;
@@ -88,6 +93,8 @@ export default function HomePage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const del = useTransactionDelete(load);
+
   // Real per-day dots for the current month, from the fetched transactions.
   const dots: Record<number, { credit?: boolean; debit?: boolean }> = {};
   if (data) {
@@ -124,6 +131,11 @@ export default function HomePage() {
           <DashboardEmptyState onAddTransaction={() => setIsPanelOpen(true)} />
         ) : (
           <>
+            {/* Greeting */}
+            <div className="mb-6 sm:mb-8 w-full overflow-hidden">
+              <Greeting className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl" />
+            </div>
+
             {/* Balance band */}
             <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:mb-10 sm:gap-6 md:flex-row md:items-end">
               <div>
@@ -149,14 +161,15 @@ export default function HomePage() {
                   <h2 className="text-base font-semibold text-ink">Recent transactions</h2>
                 </div>
                 <div className="divide-y divide-rule border-t border-rule">
-                  {data.transactions.map((tx) => (
-                    <div key={tx.id} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-canvas sm:gap-4 sm:px-6 sm:py-3.5">
+                  {data.transactions.filter((tx) => !del.isRemoved(tx.id)).map((tx) => (
+                    <div key={tx.id} className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-canvas sm:gap-4 sm:px-6 sm:py-3.5">
                       <TransactionIcon amount={tx.signedRupees} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-ink">{tx.description}</p>
                         <p className="mt-0.5 font-mono text-xs text-muted">{tx.dateLabel}{tx.category ? ` · ${tx.category}` : ""}</p>
                       </div>
                       <Amount value={tx.signedRupees} showSign className="flex-shrink-0 text-sm font-semibold" />
+                      <DeleteTxnButton onClick={() => del.request(tx)} disabled={del.pending} />
                     </div>
                   ))}
                 </div>
@@ -180,6 +193,26 @@ export default function HomePage() {
       </main>
 
       <AddTransactionPanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} onSaved={load} />
+
+      <ConfirmDialog
+        isOpen={del.target !== null}
+        title="Delete transaction?"
+        message={
+          del.target ? (
+            <>
+              This permanently removes <span className="font-medium text-ink">{del.target.description}</span>{" "}
+              ({del.target.dateLabel}). Your balance and totals will update.
+            </>
+          ) : null
+        }
+        confirmLabel="Delete"
+        danger
+        busy={del.pending}
+        onConfirm={del.confirm}
+        onCancel={del.cancel}
+      />
+
+      <Toast message={del.error} onDismiss={del.dismissError} />
     </div>
   );
 }

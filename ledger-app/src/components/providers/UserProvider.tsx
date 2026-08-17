@@ -5,6 +5,7 @@ import { createContext, useContext } from "react";
 export type UserProfile = {
   id: string;
   name: string;
+  firstName: string | null;
   email: string;
   avatarUrl: string | null;
   initials: string;

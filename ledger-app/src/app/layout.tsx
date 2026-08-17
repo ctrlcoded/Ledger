@@ -48,17 +48,18 @@ export default async function RootLayout({
 
     // Fallback if the trigger hasn't fired yet or the auth user has no email somehow.
     const { data: authData } = await (await import('@/lib/auth')).createClient().then(c => c.auth.getUser());
-    
+
     if (row) {
       const name = row.displayName || "User";
       const parts = name.split(" ");
-      const initials = parts.length > 1 
-        ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase() 
+      const initials = parts.length > 1
+        ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
         : name.slice(0, 2).toUpperCase();
 
       userProfile = {
         id: session.userId,
         name: row.displayName || "",
+        firstName: row.firstName ?? null,
         email: authData.user?.email || "",
         avatarUrl: row.avatarUrl,
         initials,

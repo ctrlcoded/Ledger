@@ -19,7 +19,8 @@ export default function LoginPage() {
   const supabase = createClient();
 
   const [mode, setMode] = useState<Mode>("signin");
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("male");
   const [email, setEmail] = useState("");
@@ -54,7 +55,7 @@ export default function LoginPage() {
     setError(null);
     setNotice(null);
 
-    if (!name.trim()) return setError("Please enter your name.");
+    if (!firstName.trim()) return setError("Please enter your first name.");
     const ageNum = Number(age);
     if (!age || Number.isNaN(ageNum) || ageNum < 13 || ageNum > 120) {
       return setError("Please enter a valid age (13–120).");
@@ -68,7 +69,12 @@ export default function LoginPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: { full_name: name.trim(), age: ageNum, gender },
+        data: {
+          first_name: firstName.trim(),
+          last_name: lastName.trim() || null,
+          age: ageNum,
+          gender,
+        },
       },
     });
     setLoading(false);
@@ -194,14 +200,14 @@ export default function LoginPage() {
                 <>
                   <div className="flex gap-3">
                     <div className="flex-1">
-                      <label htmlFor="name" className={labelClass}>Name</label>
+                      <label htmlFor="firstName" className={labelClass}>First name</label>
                       <input
-                        id="name"
+                        id="firstName"
                         type="text"
-                        autoComplete="name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Aryan Raghav"
+                        autoComplete="given-name"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="Aryan"
                         className={inputClass}
                       />
                     </div>
@@ -219,6 +225,20 @@ export default function LoginPage() {
                         className={inputClass}
                       />
                     </div>
+                  </div>
+                  <div>
+                    <label htmlFor="lastName" className={labelClass}>
+                      Last name <span className="normal-case tracking-normal text-muted/60">(optional)</span>
+                    </label>
+                    <input
+                      id="lastName"
+                      type="text"
+                      autoComplete="family-name"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Raghav"
+                      className={inputClass}
+                    />
                   </div>
                   <div>
                     <label htmlFor="gender" className={labelClass}>Gender</label>

@@ -5,8 +5,13 @@ import Navbar from "@/components/ui/Navbar";
 import Amount from "@/components/ui/Amount";
 import TransactionIcon from "@/components/ui/TransactionIcon";
 import AddTransactionPanel from "@/components/ui/AddTransactionPanel";
+import DeleteTxnButton from "@/components/ui/DeleteTxnButton";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import Toast from "@/components/ui/Toast";
 import DashboardEmptyState from "@/components/dashboard/DashboardEmptyState";
+import Greeting from "@/components/dashboard/Greeting";
 import { getOverview } from "@/app/data";
+import { useTransactionDelete } from "@/lib/useTransactionDelete";
 import { inr } from "@/lib/format";
 
 type Overview = Extract<Awaited<ReturnType<typeof getOverview>>, { ok: true }>;
@@ -25,6 +30,8 @@ export default function DashboardPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const del = useTransactionDelete(load);
 
   const cashflowMax = data
     ? Math.max(1, ...data.cashflow.flatMap((b) => [b.income, b.expense]))
@@ -55,6 +62,7 @@ export default function DashboardPage() {
           <>
             {/* Header */}
             <div className="mb-6 sm:mb-8">
+              <Greeting className="mb-1 text-sm font-medium text-muted" />
               <h1 className="text-xl font-bold tracking-tight text-ink sm:text-2xl">Your ledger</h1>
               <p className="mt-1 text-sm text-muted">Every rupee, accounted for.</p>
             </div>
@@ -95,8 +103,8 @@ export default function DashboardPage() {
                   <h2 className="text-base font-semibold text-ink">Recent transactions</h2>
                 </div>
                 <div className="divide-y divide-rule border-t border-rule">
-                  {data.transactions.map((tx) => (
-                    <div key={tx.id} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-canvas sm:gap-4 sm:px-6 sm:py-3.5">
+                  {data.transactions.filter((tx) => !del.isRemoved(tx.id)).map((tx) => (
+                    <div key={tx.id} className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-canvas sm:gap-4 sm:px-6 sm:py-3.5">
                       <TransactionIcon amount={tx.signedRupees} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-ink">{tx.description}</p>
@@ -106,6 +114,7 @@ export default function DashboardPage() {
                         </p>
                       </div>
                       <Amount value={tx.signedRupees} showSign className="flex-shrink-0 text-sm font-semibold" />
+                      <DeleteTxnButton onClick={() => del.request(tx)} disabled={del.pending} />
                     </div>
                   ))}
                 </div>
@@ -137,6 +146,26 @@ export default function DashboardPage() {
       </main>
 
       <AddTransactionPanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} onSaved={load} />
+
+      <ConfirmDialog
+        isOpen={del.target !== null}
+        title="Delete transaction?"
+        message={
+          del.target ? (
+            <>
+              This permanently removes <span className="font-medium text-ink">{del.target.description}</span>{" "}
+              ({del.target.dateLabel}). Your balance and totals will update.
+            </>
+          ) : null
+        }
+        confirmLabel="Delete"
+        danger
+        busy={del.pending}
+        onConfirm={del.confirm}
+        onCancel={del.cancel}
+      />
+
+      <Toast message={del.error} onDismiss={del.dismissError} />
     </div>
   );
 }

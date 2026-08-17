@@ -4,15 +4,18 @@ import { useCallback, useEffect, useState } from "react";
 import Navbar from "@/components/ui/Navbar";
 import TransactionIcon from "@/components/ui/TransactionIcon";
 import AddTransactionPanel from "@/components/ui/AddTransactionPanel";
+import DeleteTxnButton from "@/components/ui/DeleteTxnButton";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import Toast from "@/components/ui/Toast";
 import Amount from "@/components/ui/Amount";
 import { getCalendarMonth } from "@/app/data";
+import { useTransactionDelete } from "@/lib/useTransactionDelete";
 import type { TxnView } from "@/lib/types";
 
 const monthNames = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-const monthShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const dayNames = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 const dayNamesShort = ["M", "T", "W", "T", "F", "S", "S"];
 const dayFullNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -41,6 +44,8 @@ export default function CalendarPage() {
   }, [year, month]);
 
   useEffect(() => { load(); }, [load]);
+
+  const del = useTransactionDelete(load);
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = firstWeekdayMondayBased(year, month);
@@ -186,6 +191,9 @@ export default function CalendarPage() {
               dayTotal={dayTotal}
               selectedTxns={selectedTxns}
               onAddTransaction={() => setIsPanelOpen(true)}
+              onDelete={del.request}
+              isRemoved={del.isRemoved}
+              deleting={del.pending}
             />
           </div>
 
@@ -202,6 +210,9 @@ export default function CalendarPage() {
                   dayTotal={dayTotal}
                   selectedTxns={selectedTxns}
                   onAddTransaction={() => { setShowDetail(false); setIsPanelOpen(true); }}
+                  onDelete={del.request}
+                  isRemoved={del.isRemoved}
+                  deleting={del.pending}
                 />
               </div>
             </div>
@@ -210,6 +221,26 @@ export default function CalendarPage() {
       </main>
 
       <AddTransactionPanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} onSaved={load} />
+
+      <ConfirmDialog
+        isOpen={del.target !== null}
+        title="Delete transaction?"
+        message={
+          del.target ? (
+            <>
+              This permanently removes <span className="font-medium text-ink">{del.target.description}</span>{" "}
+              ({del.target.dateLabel}). Your balance and totals will update.
+            </>
+          ) : null
+        }
+        confirmLabel="Delete"
+        danger
+        busy={del.pending}
+        onConfirm={del.confirm}
+        onCancel={del.cancel}
+      />
+
+      <Toast message={del.error} onDismiss={del.dismissError} />
     </div>
   );
 }
@@ -221,6 +252,9 @@ function DayDetail({
   dayTotal,
   selectedTxns,
   onAddTransaction,
+  onDelete,
+  isRemoved,
+  deleting,
 }: {
   day: number;
   month: number;
@@ -228,7 +262,11 @@ function DayDetail({
   dayTotal: number;
   selectedTxns: TxnView[];
   onAddTransaction: () => void;
+  onDelete: (tx: TxnView) => void;
+  isRemoved: (id: string) => boolean;
+  deleting: boolean;
 }) {
+  const visibleTxns = selectedTxns.filter((tx) => !isRemoved(tx.id));
   return (
     <>
       <p className="mb-1 text-sm text-muted">{dayFullNames[selectedDate.getDay()]}</p>
@@ -238,16 +276,17 @@ function DayDetail({
       <Amount value={dayTotal} showSign className="mb-6 block text-2xl font-medium tracking-tight sm:mb-8 sm:text-3xl" />
 
       <p className="mb-3 text-[11px] font-medium uppercase tracking-widest text-muted sm:mb-4">Transactions</p>
-      {selectedTxns.length > 0 ? (
+      {visibleTxns.length > 0 ? (
         <div className="divide-y divide-rule">
-          {selectedTxns.map((tx) => (
-            <div key={tx.id} className="flex items-center gap-3 py-3 sm:gap-4 sm:py-4">
+          {visibleTxns.map((tx) => (
+            <div key={tx.id} className="group flex items-center gap-3 py-3 sm:gap-4 sm:py-4">
               <TransactionIcon amount={tx.signedRupees} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-ink">{tx.description}</p>
                 {tx.category && <p className="mt-0.5 text-[13px] text-muted">{tx.category}</p>}
               </div>
               <Amount value={tx.signedRupees} showSign className="flex-shrink-0 text-sm font-medium" />
+              <DeleteTxnButton onClick={() => onDelete(tx)} disabled={deleting} />
             </div>
           ))}
         </div>

@@ -26,6 +26,8 @@ export const subStatusEnum = pgEnum('sub_status', ['active', 'past_due', 'cancel
 export const profiles = pgTable('profiles', {
   id: uuid('id').primaryKey(), // references auth.users(id)
   displayName: text('display_name'),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name'),
   avatarUrl: text('avatar_url'),
   gender: text('gender'),
   defaultCurrency: char('default_currency', { length: 3 }).notNull().default('INR'),
