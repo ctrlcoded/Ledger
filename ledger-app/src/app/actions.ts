@@ -7,7 +7,7 @@ import { and, eq } from 'drizzle-orm';
 import { getSession } from '@/lib/auth';
 import { rateLimit } from '@/lib/ratelimit';
 import { db } from '@/db/client';
-import { transactions, auditLog, categories } from '@/db/schema';
+import { transactions, auditLog, categories, profiles } from '@/db/schema';
 
 const AddTransaction = z.object({
   clientId:     z.string().uuid(),
@@ -175,5 +175,28 @@ export async function deleteTransaction(id: unknown) {
     revalidatePath(path);
   }
 
+  return { ok: true } as const;
+}
+
+const UpdateProfile = z.object({
+  firstName: z.string().max(100).min(1),
+  displayName: z.string().max(100).min(1),
+});
+
+export async function updateProfile(input: unknown) {
+  const session = await getSession();
+  if (!session) return { ok: false, error: 'UNAUTHENTICATED' } as const;
+
+  const parsed = UpdateProfile.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'INVALID' } as const;
+
+  const { firstName, displayName } = parsed.data;
+
+  await db.update(profiles)
+    .set({ firstName, displayName, updatedAt: new Date() })
+    .where(eq(profiles.id, session.userId));
+
+  revalidatePath('/', 'layout');
+  
   return { ok: true } as const;
 }

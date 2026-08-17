@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/ui/Navbar";
 import { signOut } from "@/app/auth/actions";
 import { useUser } from "@/components/providers/UserProvider";
+import { updateProfile } from "@/app/actions";
 
 type ThemeMode = "light" | "dark" | "system";
 
@@ -78,9 +79,11 @@ export default function SettingsPage() {
     localStorage.setItem("currency", v);
   };
 
-  const saveAccount = () => {
-    localStorage.setItem("profileName", name.trim());
+  const saveAccount = async () => {
+    const trimmedName = name.trim();
+    localStorage.setItem("profileName", trimmedName);
     localStorage.setItem("profileEmail", email.trim());
+    await updateProfile({ firstName: trimmedName, displayName: trimmedName });
     setEditing(false);
   };
 
@@ -130,7 +133,7 @@ export default function SettingsPage() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="block w-full rounded-lg border border-rule bg-paper-elevated px-3 py-1.5 text-sm text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent sm:w-56"
-                      placeholder="Full name"
+                      placeholder="First name"
                     />
                     <input
                       value={email}
